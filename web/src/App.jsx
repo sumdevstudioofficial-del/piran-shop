@@ -51,9 +51,29 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Routing: Standalone Admin vs Public Storefront
+  const [currentRoute, setCurrentRoute] = useState(() => {
+    const p = window.location.pathname.toLowerCase();
+    const h = window.location.hash.toLowerCase();
+    return p.includes('/admin') || h.includes('#admin') ? 'admin' : 'shop';
+  });
+
+  useEffect(() => {
+    const handleRouteCheck = () => {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      setCurrentRoute(p.includes('/admin') || h.includes('#admin') ? 'admin' : 'shop');
+    };
+    window.addEventListener('popstate', handleRouteCheck);
+    window.addEventListener('hashchange', handleRouteCheck);
+    return () => {
+      window.removeEventListener('popstate', handleRouteCheck);
+      window.removeEventListener('hashchange', handleRouteCheck);
+    };
+  }, []);
 
   // Persist cart
   useEffect(() => {
@@ -176,6 +196,24 @@ export default function App() {
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // If user navigated to Secret Admin Route (/admin or #admin)
+  if (currentRoute === 'admin') {
+    return (
+      <AdminDashboard
+        isStandalone={true}
+        onNavigateToStore={() => {
+          window.history.pushState({}, '', '/');
+          setCurrentRoute('shop');
+        }}
+        products={products}
+        onAddProduct={handleAddProduct}
+        onDeleteProduct={handleDeleteProduct}
+        categories={categories}
+      />
+    );
+  }
+
+  // Public Customer Storefront (Zero admin buttons visible)
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
       {/* Toast message popup */}
@@ -198,7 +236,6 @@ export default function App() {
         totalCartPrice={totalCartPrice}
         onSelectCategory={setActiveCategory}
         activeCategory={activeCategory}
-        onOpenAdmin={() => setIsAdminOpen(true)}
       />
 
       <main className="flex-1">
@@ -328,16 +365,6 @@ export default function App() {
       <OrderTrackingModal
         isOpen={isTrackingOpen}
         onClose={() => setIsTrackingOpen(false)}
-      />
-
-      {/* Admin Control Panel */}
-      <AdminDashboard
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        products={products}
-        onAddProduct={handleAddProduct}
-        onDeleteProduct={handleDeleteProduct}
-        categories={categories}
       />
 
       {/* Footer */}

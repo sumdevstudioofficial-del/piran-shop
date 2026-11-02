@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Search, ShoppingCart, Truck, Phone, Heart, User, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Search, ShoppingCart, Truck, Phone, Heart, User, ChevronDown, Lock } from 'lucide-react';
 
 export default function Navbar({
   searchQuery,
@@ -9,7 +9,8 @@ export default function Navbar({
   setIsTrackingOpen,
   totalCartPrice,
   onSelectCategory,
-  activeCategory
+  activeCategory,
+  onOpenAdmin
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-xs">
@@ -39,6 +40,15 @@ export default function Navbar({
             >
               <Truck className="w-3.5 h-3.5 text-indigo-400" />
               <span>অর্ডার ট্র্যাক</span>
+            </button>
+            <span className="text-slate-700">|</span>
+            <button
+              onClick={onOpenAdmin}
+              className="flex items-center gap-1.5 text-slate-300 hover:text-amber-300 transition cursor-pointer"
+              title="অ্যাডমিন কন্ট্রোল প্যানেল"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>অ্যাডমিন</span>
             </button>
           </div>
         </div>

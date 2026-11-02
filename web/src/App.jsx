@@ -8,6 +8,7 @@ import ProductQuickView from './components/ProductQuickView';
 import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import OrderTrackingModal from './components/OrderTrackingModal';
+import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
 import { Sparkles, SlidersHorizontal, Check } from 'lucide-react';
 import initialProducts from './data/products.json';
@@ -17,10 +18,20 @@ const API_BASE = 'http://localhost:5000/api';
 
 export default function App() {
   const [categories, setCategories] = useState(initialCategories || []);
-  const [products, setProducts] = useState(initialProducts || []);
-  const [deals, setDeals] = useState(
-    initialProducts ? initialProducts.filter((p) => p.is_flash_deal) : []
-  );
+  const [products, setProducts] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('piran_custom_products') || 'null');
+      if (saved && saved.length > 0) return saved;
+    } catch (e) {}
+    return initialProducts || [];
+  });
+  const [deals, setDeals] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('piran_custom_products') || 'null');
+      if (saved && saved.length > 0) return saved.filter((p) => p.is_flash_deal);
+    } catch (e) {}
+    return initialProducts ? initialProducts.filter((p) => p.is_flash_deal) : [];
+  });
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular');
@@ -40,6 +51,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -134,6 +146,33 @@ export default function App() {
     setCart((prev) => prev.filter((item) => item.id !== productId));
   };
 
+  // Admin Product Actions
+  const handleAddProduct = (newProduct) => {
+    setProducts((prev) => {
+      const updated = [newProduct, ...prev];
+      try {
+        localStorage.setItem('piran_custom_products', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    if (newProduct.is_flash_deal) {
+      setDeals((prev) => [newProduct, ...prev]);
+    }
+    showToast(`"${newProduct.title_bn}" পণ্যটি স্টোরে যুক্ত হয়েছে!`);
+  };
+
+  const handleDeleteProduct = (productId) => {
+    setProducts((prev) => {
+      const updated = prev.filter((p) => p.id !== productId);
+      try {
+        localStorage.setItem('piran_custom_products', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setDeals((prev) => prev.filter((p) => p.id !== productId));
+    showToast('পণ্যটি সফলভাবে মুছে ফেলা হয়েছে।');
+  };
+
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalCartPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -159,6 +198,7 @@ export default function App() {
         totalCartPrice={totalCartPrice}
         onSelectCategory={setActiveCategory}
         activeCategory={activeCategory}
+        onOpenAdmin={() => setIsAdminOpen(true)}
       />
 
       <main className="flex-1">
@@ -288,6 +328,16 @@ export default function App() {
       <OrderTrackingModal
         isOpen={isTrackingOpen}
         onClose={() => setIsTrackingOpen(false)}
+      />
+
+      {/* Admin Control Panel */}
+      <AdminDashboard
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+        products={products}
+        onAddProduct={handleAddProduct}
+        onDeleteProduct={handleDeleteProduct}
+        categories={categories}
       />
 
       {/* Footer */}

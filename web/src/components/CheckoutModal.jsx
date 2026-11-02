@@ -94,13 +94,17 @@ export default function CheckoutModal({
       const result = await response.json();
       if (result.success) {
         setPlacedOrder(result.order);
+        try {
+          const prev = JSON.parse(localStorage.getItem('piran_orders') || '[]');
+          localStorage.setItem('piran_orders', JSON.stringify([result.order, ...prev]));
+        } catch (e) {}
         onOrderSuccess();
       } else {
         alert(result.message || 'অর্ডার করতে সমস্যা হয়েছে।');
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      // Fallback offline mock order
+      // Fallback offline / live client order
       const mockOrder = {
         order_id: 'PIRAN-' + Math.floor(100000 + Math.random() * 900000),
         customer: { name, phone },
@@ -112,6 +116,10 @@ export default function CheckoutModal({
         estimated_delivery: district === 'ঢাকা' ? '২৪-৪৮ ঘণ্টার মধ্যে' : '২-৩ কার্যদিবসের মধ্যে'
       };
       setPlacedOrder(mockOrder);
+      try {
+        const prev = JSON.parse(localStorage.getItem('piran_orders') || '[]');
+        localStorage.setItem('piran_orders', JSON.stringify([mockOrder, ...prev]));
+      } catch (e) {}
       onOrderSuccess();
     } finally {
       setLoading(false);

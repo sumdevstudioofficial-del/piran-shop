@@ -10,17 +10,21 @@ import CheckoutModal from './components/CheckoutModal';
 import OrderTrackingModal from './components/OrderTrackingModal';
 import Footer from './components/Footer';
 import { Sparkles, SlidersHorizontal, Check } from 'lucide-react';
+import initialProducts from './data/products.json';
+import initialCategories from './data/categories.json';
 
 const API_BASE = 'http://localhost:5000/api';
 
 export default function App() {
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [deals, setDeals] = useState([]);
+  const [categories, setCategories] = useState(initialCategories || []);
+  const [products, setProducts] = useState(initialProducts || []);
+  const [deals, setDeals] = useState(
+    initialProducts ? initialProducts.filter((p) => p.is_flash_deal) : []
+  );
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Cart state persisted to localStorage
   const [cart, setCart] = useState(() => {
@@ -48,26 +52,30 @@ export default function App() {
     }
   }, [cart]);
 
-  // Fetch initial data
+  // Fetch initial data (if central API is accessible)
   useEffect(() => {
     async function loadData() {
       try {
-        setLoading(true);
         const [catRes, prodRes, dealsRes] = await Promise.all([
-          fetch(`${API_BASE}/categories`),
-          fetch(`${API_BASE}/products`),
-          fetch(`${API_BASE}/deals`)
+          fetch(`${API_BASE}/categories`).catch(() => null),
+          fetch(`${API_BASE}/products`).catch(() => null),
+          fetch(`${API_BASE}/deals`).catch(() => null)
         ]);
 
-        const catData = await catRes.json();
-        const prodData = await prodRes.json();
-        const dealsData = await dealsRes.json();
-
-        if (catData.success) setCategories(catData.data);
-        if (prodData.success) setProducts(prodData.data);
-        if (dealsData.success) setDeals(dealsData.data);
+        if (catRes && catRes.ok) {
+          const catData = await catRes.json();
+          if (catData?.success && catData.data?.length > 0) setCategories(catData.data);
+        }
+        if (prodRes && prodRes.ok) {
+          const prodData = await prodRes.json();
+          if (prodData?.success && prodData.data?.length > 0) setProducts(prodData.data);
+        }
+        if (dealsRes && dealsRes.ok) {
+          const dealsData = await dealsRes.json();
+          if (dealsData?.success && dealsData.data?.length > 0) setDeals(dealsData.data);
+        }
       } catch (err) {
-        console.error('API Error, using fallback data:', err);
+        // Fallback data is already loaded in state
       } finally {
         setLoading(false);
       }

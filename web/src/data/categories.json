@@ -1,0 +1,10 @@
+[
+  { "id": "all", "name": "সব পণ্য", "name_en": "All Products", "icon": "LayoutGrid" },
+  { "id": "gadgets", "name": "গ্যাজেটস ও ইলেকট্রনিক্স", "name_en": "Gadgets & Electronics", "icon": "Smartphone" },
+  { "id": "fashion", "name": "ফ্যাশন ও লাইফস্টাইল", "name_en": "Fashion & Lifestyle", "icon": "Shirt" },
+  { "id": "home", "name": "হোম ও কিচেন", "name_en": "Home & Kitchen", "icon": "Home" },
+  { "id": "grocery", "name": "অর্গানিক ও গ্রোসারি", "name_en": "Organic & Grocery", "icon": "ShoppingBag" },
+  { "id": "beauty", "name": "হেলথ ও বিউটি", "name_en": "Health & Beauty", "icon": "Sparkles" },
+  { "id": "computers", "name": "কম্পিউটার ও আইটি", "name_en": "Computers & IT", "icon": "Monitor" },
+  { "id": "fitness", "name": "স্পোর্টস ও ফিটনেস", "name_en": "Sports & Fitness", "icon": "Dumbbell" }
+]

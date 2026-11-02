@@ -18,17 +18,29 @@ export default function OrderTrackingModal({ isOpen, onClose }) {
     setOrderData(null);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId.trim()}`);
-      const data = await res.json();
+      const res = await fetch(`http://localhost:5000/api/orders/${orderId.trim()}`).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          setOrderData(data.data);
+          return;
+        }
+      }
 
-      if (data.success && data.data) {
-        setOrderData(data.data);
+      // Check localStorage if API is offline or order was placed on client
+      const localOrders = JSON.parse(localStorage.getItem('piran_orders') || '[]');
+      const found = localOrders.find(
+        (o) => o.order_id?.toLowerCase() === orderId.trim().toLowerCase()
+      );
+
+      if (found) {
+        setOrderData(found);
       } else {
         setError('এই নম্বরে কোনো অর্ডার পাওয়া যায়নি। সঠিক অর্ডার আইডি দিন।');
       }
     } catch (err) {
       console.error(err);
-      setError('ট্র্যাকিং সার্ভারের সাথে যোগাযোগ করা যায়নি।');
+      setError('ট্র্যাকিংয়ের তথ্য পাওয়া যায়নি। সঠিক অর্ডার আইডি দিন।');
     } finally {
       setLoading(false);
     }

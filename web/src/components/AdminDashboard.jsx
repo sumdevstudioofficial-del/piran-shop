@@ -25,10 +25,14 @@ import {
   Send,
   Settings,
   Key,
-  Check
+  Check,
+  Printer,
+  MessageSquare
 } from 'lucide-react';
 import { getOrders, updateOrderStatus, checkCloudHealth } from '../services/cloudDb';
 import { dispatchToCourier, getCourierSettings, saveCourierSettings } from '../services/courierService';
+import { sendCustomSms, sendCourierDispatchSms, getSmsSettings, saveSmsSettings } from '../services/smsService';
+import InvoiceModal from './InvoiceModal';
 
 export default function AdminDashboard({
   isStandalone = true,
@@ -72,6 +76,15 @@ export default function AdminDashboard({
   const [courierSavedMsg, setCourierSavedMsg] = useState('');
   const [courierActionMsg, setCourierActionMsg] = useState('');
 
+  // Invoice & SMS Modal State
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
+  const [smsModalOrder, setSmsModalOrder] = useState(null);
+  const [smsText, setSmsText] = useState('');
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [smsSettings, setSmsSettings] = useState(getSmsSettings());
+  const [smsSettingsSavedMsg, setSmsSettingsSavedMsg] = useState('');
+  const [smsToastMsg, setSmsToastMsg] = useState('');
+
   // Handle Courier Dispatch Submit
   const handleConfirmDispatch = async (e) => {
     e.preventDefault();
@@ -84,7 +97,10 @@ export default function AdminDashboard({
         note: courierNote
       });
 
-      setCourierActionMsg(`🎉 অর্ডারটি সফলভাবে ${result.provider}-এ বুকিং হয়েছে! ট্র্যাকিং কোড: ${result.tracking_code}`);
+      // Auto-send Bengali SMS Notification to Customer with tracking code
+      sendCourierDispatchSms(dispatchingOrder, result);
+
+      setCourierActionMsg(`🎉 অর্ডারটি সফলভাবে ${result.provider}-এ বুকিং হয়েছে এবং গ্রাহকের ফোনে ট্র্যাকিং এসএমএস পাঠানো হয়েছে! কোড: ${result.tracking_code}`);
       setTimeout(() => setCourierActionMsg(''), 6000);
       setDispatchingOrder(null);
       await fetchLiveOrders(true);
@@ -102,6 +118,33 @@ export default function AdminDashboard({
     saveCourierSettings(courierSettings);
     setCourierSavedMsg('✅ কুরিয়ার API সেটিংস সফলভাবে সংরক্ষিত হয়েছে!');
     setTimeout(() => setCourierSavedMsg(''), 3500);
+  };
+
+  // Handle Quick Custom SMS Send
+  const handleSendCustomSms = async (e) => {
+    e.preventDefault();
+    if (!smsModalOrder || !smsText.trim()) return;
+
+    setIsSendingSms(true);
+    try {
+      await sendCustomSms(smsModalOrder.customer?.phone, smsText.trim());
+      setSmsToastMsg(`✅ গ্রাহক ${smsModalOrder.customer?.name}-কে সফলভাবে এসএমএস পাঠানো হয়েছে!`);
+      setTimeout(() => setSmsToastMsg(''), 4000);
+      setSmsModalOrder(null);
+    } catch (err) {
+      console.error(err);
+      alert('এসএমএস পাঠাতে সমস্যা হয়েছে।');
+    } finally {
+      setIsSendingSms(false);
+    }
+  };
+
+  // Handle Save SMS Settings
+  const handleSaveSmsSettings = (e) => {
+    e.preventDefault();
+    saveSmsSettings(smsSettings);
+    setSmsSettingsSavedMsg('✅ বাংলা এসএমএস গেটওয়ে সেটিংস সংরক্ষিত হয়েছে!');
+    setTimeout(() => setSmsSettingsSavedMsg(''), 3500);
   };
 
   // Fetch live orders from Cloud Database
@@ -413,7 +456,7 @@ export default function AdminDashboard({
                 }`}
               >
                 <Truck className="w-4 h-4 text-emerald-400" />
-                <span>কুরিয়ার অটোমেশন (Steadfast)</span>
+                <span>কুরিয়ার ও এসএমএস অটোমেশন</span>
               </button>
             </div>
 
@@ -425,6 +468,17 @@ export default function AdminDashboard({
                   <span>{courierActionMsg}</span>
                 </div>
                 <button onClick={() => setCourierActionMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
+              </div>
+            )}
+
+            {/* SMS Toast Message */}
+            {smsToastMsg && (
+              <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>{smsToastMsg}</span>
+                </div>
+                <button onClick={() => setSmsToastMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
               </div>
             )}
 
@@ -548,6 +602,29 @@ export default function AdminDashboard({
                               <option value="Delivered" className="bg-slate-900 text-white">🟢 ডেলিভারি সম্পন্ন (Delivered)</option>
                               <option value="Cancelled" className="bg-slate-900 text-white">🔴 বাতিল (Cancelled)</option>
                             </select>
+
+                            {/* Printable Invoice Button */}
+                            <button
+                              onClick={() => setSelectedInvoiceOrder(order)}
+                              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-700"
+                              title="মেমো ও ইনভয়েস প্রিন্ট করুন"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>ইনভয়েস</span>
+                            </button>
+
+                            {/* SMS Composer Button */}
+                            <button
+                              onClick={() => {
+                                setSmsModalOrder(order);
+                                setSmsText(`প্রিয় ${order.customer?.name}, পিরান শপ-এ আপনার অর্ডার ${order.order_id} প্রসেসিং সম্পন্ন হয়েছে। মোট বিল: ${order.pricing?.total || 0}৳। লাইভ ট্র্যাকিং করুন: piranshop.online ধন্যবাদ!`);
+                              }}
+                              className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-700"
+                              title="গ্রাহকের মোবাইলে সরাসরি এসএমএস পাঠান"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>এসএমএস</span>
+                            </button>
                           </div>
                         </div>
 
@@ -920,10 +997,201 @@ export default function AdminDashboard({
                     )}
                   </div>
                 </div>
+
+                {/* Bengali SMS Gateway Settings */}
+                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 sm:p-6">
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-white">বাংলা কাস্টমার এসএমএস সেটিংস</h3>
+                      <p className="text-xs text-slate-400">Greenweb, BulkSMSBD বা যেকোনো বাংলাদেশী এসএমএস গেটওয়ে</p>
+                    </div>
+                  </div>
+
+                  {smsSettingsSavedMsg && (
+                    <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>{smsSettingsSavedMsg}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveSmsSettings} className="space-y-4 max-w-2xl text-xs">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1.5">এসএমএস গেটওয়ে প্রোভাইডার</label>
+                        <select
+                          value={smsSettings.gateway}
+                          onChange={(e) => setSmsSettings({ ...smsSettings, gateway: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white focus:border-indigo-500 outline-hidden font-semibold cursor-pointer"
+                        >
+                          <option value="greenweb">Greenweb SMS (গ্রিনওয়েব বাংলাদেশ)</option>
+                          <option value="bulksmsbd">BulkSMSBD (বাল্ক এসএমএস বিডি)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-300 mb-1.5">সেন্ডার আইডি (Sender ID)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: PiranShop"
+                          value={smsSettings.sender_id || ''}
+                          onChange={(e) => setSmsSettings({ ...smsSettings, sender_id: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs focus:border-indigo-500 outline-hidden"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1.5">Gateway API Key / Token</label>
+                      <input
+                        type="password"
+                        placeholder="আপনার এসএমএস গেটওয়ের API Token দিন..."
+                        value={smsSettings.api_key || ''}
+                        onChange={(e) => setSmsSettings({ ...smsSettings, api_key: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs focus:border-indigo-500 outline-hidden"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        💡 টোকেন খালি থাকলে সিস্টেম টেস্ট মোডে ব্রাউজারে কনফার্মেশন ও লগ তৈরি করবে। লাইভ পাঠাতে আপনার Greenweb বা BulkSMSBD API কি দিন।
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.auto_order_sms}
+                          onChange={(e) => setSmsSettings({ ...smsSettings, auto_order_sms: e.target.checked })}
+                          className="w-4 h-4 text-indigo-600 rounded cursor-pointer"
+                        />
+                        <span>গ্রাহক অর্ডার প্লেস করার সাথে সাথে কনফার্মেশন এসএমএস পাঠান</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={smsSettings.auto_courier_sms}
+                          onChange={(e) => setSmsSettings({ ...smsSettings, auto_courier_sms: e.target.checked })}
+                          className="w-4 h-4 text-indigo-600 rounded cursor-pointer"
+                        />
+                        <span>কুরিয়ারে পার্সেল হস্তান্তরের পর ট্র্যাকিং কোড সহ এসএমএস পাঠান</span>
+                      </label>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-xs rounded-xl transition cursor-pointer shadow-md shadow-indigo-600/20 flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>এসএমএস সেটিংস সেভ করুন</span>
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
           </div>
         )}
+
+        {/* Quick SMS Composer Modal */}
+        {smsModalOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl text-white space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white">গ্রাহককে বাংলা এসএমএস পাঠান</h3>
+                    <p className="text-xs text-slate-400">প্রাপক: <strong className="text-emerald-400 font-mono">{smsModalOrder.customer?.phone}</strong> ({smsModalOrder.customer?.name})</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSmsModalOrder(null)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Pre-written SMS Templates */}
+              <div>
+                <span className="text-[11px] text-slate-400 font-bold block mb-1.5">রেডিমেড টেমপ্লেট নির্বাচন করুন:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSmsText(`প্রিয় ${smsModalOrder.customer?.name}, পিরান শপ-এ আপনার অর্ডার ${smsModalOrder.order_id} সফলভাবে গৃহীত হয়েছে। মোট বিল: ${smsModalOrder.pricing?.total || 0}৳। ধন্যবাদ!`)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-slate-700 cursor-pointer"
+                  >
+                    অর্ডার কনফার্মেশন
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSmsText(`প্রিয় ${smsModalOrder.customer?.name}, আপনার অর্ডারটি কুরিয়ারে হস্তান্তর করা হয়েছে। দ্রুততম সময়ে ডেলিভারি পাবেন। ট্র্যাকিং: piranshop.online`)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-slate-700 cursor-pointer"
+                  >
+                    কুরিয়ার আপডেট
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSmsText(`প্রিয় ${smsModalOrder.customer?.name}, আপনার ডেলিভারি রাইডার আজ পৌঁছাবে। ক্যাশ টাকা প্রস্তুত রাখার অনুরোধ করা হচ্ছে। - পিরান শপ`)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 border border-slate-700 cursor-pointer"
+                  >
+                    রাইডার আজ পৌঁছাবে
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleSendCustomSms} className="space-y-3 text-xs">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-bold text-slate-300">এসএমএস বার্তা (Bangla / English)</label>
+                    <span className="text-[10px] text-slate-400 font-mono">{smsText.length} অক্ষর</span>
+                  </div>
+                  <textarea
+                    rows={4}
+                    required
+                    value={smsText}
+                    onChange={(e) => setSmsText(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:border-indigo-500 outline-hidden leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setSmsModalOrder(null)}
+                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition cursor-pointer"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingSms}
+                    className="flex-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition cursor-pointer shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2"
+                  >
+                    {isSendingSms ? (
+                      <span>পাঠানো হচ্ছে...</span>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>এসএমএস পাঠান ✉️</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Invoice Viewer Modal */}
+        <InvoiceModal
+          isOpen={selectedInvoiceOrder !== null}
+          onClose={() => setSelectedInvoiceOrder(null)}
+          order={selectedInvoiceOrder}
+        />
 
         {/* Dispatch to Courier Modal */}
         {dispatchingOrder && (

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, MapPin, Banknote, ShieldCheck, Truck, Loader2, Home, Building2, Phone, User } from 'lucide-react';
+import { X, CheckCircle2, MapPin, Banknote, ShieldCheck, Truck, Loader2, Home, Building2, Phone, User, Printer } from 'lucide-react';
 import { createOrder } from '../services/cloudDb';
+import { sendOrderConfirmationSms } from '../services/smsService';
+import InvoiceModal from './InvoiceModal';
 
 // Complete Bangladesh Divisions and Districts mapping
 const bangladeshGeoData = {
@@ -30,6 +32,7 @@ export default function CheckoutModal({
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [loading, setLoading] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
   // When division changes, update district default
   useEffect(() => {
@@ -89,6 +92,8 @@ export default function CheckoutModal({
       });
 
       setPlacedOrder(order);
+      // Auto-send Bengali SMS Notification
+      sendOrderConfirmationSms(order);
       onOrderSuccess();
     } catch (err) {
       console.error('Checkout error:', err);
@@ -164,12 +169,31 @@ export default function CheckoutModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition cursor-pointer"
-            >
-              কেনাকাটা চালিয়ে যান
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsInvoiceOpen(true)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 border border-slate-300 transition cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-slate-700" />
+                <span>মেমো / ইনভয়েস দেখুন</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl transition cursor-pointer shadow-md"
+              >
+                কেনাকাটা চালিয়ে যান
+              </button>
+            </div>
+
+            {/* Invoice Viewer Modal */}
+            <InvoiceModal
+              isOpen={isInvoiceOpen}
+              onClose={() => setIsInvoiceOpen(false)}
+              order={placedOrder}
+            />
           </div>
         ) : (
           /* Structured Home Delivery Checkout Form */

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, 
   Lock, 
@@ -18,8 +18,12 @@ import {
   AlertCircle,
   Search,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
+  Database,
+  Wifi
 } from 'lucide-react';
+import { getOrders, updateOrderStatus, checkCloudHealth } from '../services/cloudDb';
 
 export default function AdminDashboard({
   isStandalone = true,
@@ -35,10 +39,12 @@ export default function AdminDashboard({
   const [pinError, setPinError] = useState('');
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'products' | 'add_product'
 
-  // Orders loaded from localStorage & initial mock
+  // Orders loaded from Cloud Database & localStorage
   const [orders, setOrders] = useState([]);
   const [orderFilter, setOrderFilter] = useState('all');
   const [orderSearch, setOrderSearch] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState({ connected: true, provider: 'Cloud DB' });
 
   // New Product Form State
   const [newTitleBn, setNewTitleBn] = useState('');
@@ -52,31 +58,33 @@ export default function AdminDashboard({
   const [isFlash, setIsFlash] = useState(false);
   const [productSuccessMsg, setProductSuccessMsg] = useState('');
 
-  // Load orders from localStorage
-  useEffect(() => {
+  // Fetch live orders from Cloud Database
+  const fetchLiveOrders = useCallback(async (showIndicator = false) => {
+    if (showIndicator) setIsSyncing(true);
     try {
-      const savedOrders = JSON.parse(localStorage.getItem('piran_orders') || '[]');
-      if (savedOrders.length === 0) {
-        const seedOrder = {
-          order_id: 'PIRAN-841920',
-          customer: { name: 'মোঃ রাকিবুল হাসান', phone: '01712345678' },
-          shipping_address: 'বাসা #১২ (৩য় তলা), রোড #৫, ব্লক-ডি, মিরপুর-১০, থানা: মিরপুর, জেলা: ঢাকা, বিভাগ: ঢাকা',
-          pricing: { total: 3850, subtotal: 3850, delivery_fee: 0 },
-          payment: { method: 'cod', status: 'Cash on Delivery' },
-          items: [{ title_bn: 'স্মার্ট ওয়াচ আল্ট্রা ২', price: 3850, quantity: 1 }],
-          status: 'Processing',
-          status_bn: 'প্রক্রিয়াধীন রয়েছে',
-          created_at: new Date().toISOString()
-        };
-        setOrders([seedOrder]);
-        localStorage.setItem('piran_orders', JSON.stringify([seedOrder]));
-      } else {
-        setOrders(savedOrders);
+      const liveOrders = await getOrders();
+      if (Array.isArray(liveOrders)) {
+        setOrders(liveOrders);
       }
+      const health = await checkCloudHealth();
+      setCloudStatus(health);
     } catch (e) {
-      console.error(e);
+      console.warn('[Admin] Sync warning:', e);
+    } finally {
+      if (showIndicator) {
+        setTimeout(() => setIsSyncing(false), 400);
+      }
     }
   }, []);
+
+  // Sync on mount and auto-refresh every 15 seconds
+  useEffect(() => {
+    fetchLiveOrders();
+    const interval = setInterval(() => {
+      fetchLiveOrders(false);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [fetchLiveOrders]);
 
   // Handle Login
   const handleLogin = (e) => {
@@ -84,20 +92,26 @@ export default function AdminDashboard({
     if (pin === 'admin123' || pin === '1234') {
       setIsAuthenticated(true);
       setPinError('');
+      fetchLiveOrders(true);
     } else {
       setPinError('ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন (ডিফল্ট: admin123)');
     }
   };
 
-  // Change Order Status
-  const handleStatusChange = (orderId, newStatus, newStatusBn) => {
+  // Change Order Status with Cloud Database Persistence
+  const handleStatusChange = async (orderId, newStatus, newStatusBn) => {
+    // Optimistic UI update
     const updated = orders.map((o) =>
       o.order_id === orderId ? { ...o, status: newStatus, status_bn: newStatusBn } : o
     );
     setOrders(updated);
+
+    // Save to Cloud Database
     try {
-      localStorage.setItem('piran_orders', JSON.stringify(updated));
-    } catch (e) {}
+      await updateOrderStatus(orderId, newStatus, newStatusBn);
+    } catch (e) {
+      console.error('Failed to sync status to cloud:', e);
+    }
   };
 
   // Submit New Product
@@ -189,13 +203,32 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isAuthenticated && (
+              <div className="flex items-center gap-2">
+                <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  ক্লাউড লাইভ সিঙ্ক
+                </span>
+
+                <button
+                  onClick={() => fetchLiveOrders(true)}
+                  disabled={isSyncing}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 border border-indigo-500/30 transition cursor-pointer"
+                  title="ক্লাউড ডেটাবেজ থেকে নতুন অর্ডার রিফ্রেশ করুন"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isSyncing ? 'সিঙ্ক হচ্ছে...' : 'রিফ্রেশ'}</span>
+                </button>
+              </div>
+            )}
+
             <button
               onClick={onNavigateToStore}
               className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-700"
             >
               <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
-              <span>মূল স্টোরে ফিরে যান</span>
+              <span>মূল স্টোর</span>
             </button>
 
             {isAuthenticated && (

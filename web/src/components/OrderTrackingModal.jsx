@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Search, CheckCircle, Package, Truck, Home, Loader2, AlertCircle } from 'lucide-react';
+import { trackOrder } from '../services/cloudDb';
 
 export default function OrderTrackingModal({ isOpen, onClose }) {
   const [orderId, setOrderId] = useState('');
@@ -18,21 +19,7 @@ export default function OrderTrackingModal({ isOpen, onClose }) {
     setOrderData(null);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId.trim()}`).catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data.success && data.data) {
-          setOrderData(data.data);
-          return;
-        }
-      }
-
-      // Check localStorage if API is offline or order was placed on client
-      const localOrders = JSON.parse(localStorage.getItem('piran_orders') || '[]');
-      const found = localOrders.find(
-        (o) => o.order_id?.toLowerCase() === orderId.trim().toLowerCase()
-      );
-
+      const found = await trackOrder(orderId.trim());
       if (found) {
         setOrderData(found);
       } else {

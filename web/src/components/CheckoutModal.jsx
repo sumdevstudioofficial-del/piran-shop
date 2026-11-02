@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, MapPin, Banknote, ShieldCheck, Truck, Loader2, Home, Building2, Phone, User } from 'lucide-react';
+import { createOrder } from '../services/cloudDb';
 
 // Complete Bangladesh Divisions and Districts mapping
 const bangladeshGeoData = {
@@ -73,35 +74,22 @@ export default function CheckoutModal({
     const fullFormattedAddress = `${homeAddress}, থানা: ${thana}, জেলা: ${district}, বিভাগ: ${division}`;
 
     try {
-      const response = await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer: { name, phone },
-          shipping_address: fullFormattedAddress,
-          address_details: {
-            division,
-            district,
-            thana,
-            home_address: homeAddress,
-            notes
-          },
-          items: cartItems,
-          payment_method: paymentMethod
-        })
+      const order = await createOrder({
+        customer: { name, phone },
+        shipping_address: fullFormattedAddress,
+        address_details: {
+          division,
+          district,
+          thana,
+          home_address: homeAddress,
+          notes
+        },
+        items: cartItems,
+        payment_method: paymentMethod
       });
 
-      const result = await response.json();
-      if (result.success) {
-        setPlacedOrder(result.order);
-        try {
-          const prev = JSON.parse(localStorage.getItem('piran_orders') || '[]');
-          localStorage.setItem('piran_orders', JSON.stringify([result.order, ...prev]));
-        } catch (e) {}
-        onOrderSuccess();
-      } else {
-        alert(result.message || 'অর্ডার করতে সমস্যা হয়েছে।');
-      }
+      setPlacedOrder(order);
+      onOrderSuccess();
     } catch (err) {
       console.error('Checkout error:', err);
       // Fallback offline / live client order

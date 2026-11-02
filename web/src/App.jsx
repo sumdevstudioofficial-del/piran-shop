@@ -13,6 +13,7 @@ import Footer from './components/Footer';
 import { Sparkles, SlidersHorizontal, Check } from 'lucide-react';
 import initialProducts from './data/products.json';
 import initialCategories from './data/categories.json';
+import { getProducts, addCustomProduct, deleteCustomProduct } from './services/cloudDb';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -84,30 +85,17 @@ export default function App() {
     }
   }, [cart]);
 
-  // Fetch initial data (if central API is accessible)
+  // Fetch initial data & sync with Cloud Database
   useEffect(() => {
     async function loadData() {
       try {
-        const [catRes, prodRes, dealsRes] = await Promise.all([
-          fetch(`${API_BASE}/categories`).catch(() => null),
-          fetch(`${API_BASE}/products`).catch(() => null),
-          fetch(`${API_BASE}/deals`).catch(() => null)
-        ]);
-
-        if (catRes && catRes.ok) {
-          const catData = await catRes.json();
-          if (catData?.success && catData.data?.length > 0) setCategories(catData.data);
-        }
-        if (prodRes && prodRes.ok) {
-          const prodData = await prodRes.json();
-          if (prodData?.success && prodData.data?.length > 0) setProducts(prodData.data);
-        }
-        if (dealsRes && dealsRes.ok) {
-          const dealsData = await dealsRes.json();
-          if (dealsData?.success && dealsData.data?.length > 0) setDeals(dealsData.data);
+        const cloudProds = await getProducts();
+        if (Array.isArray(cloudProds) && cloudProds.length > 0) {
+          setProducts(cloudProds);
+          setDeals(cloudProds.filter((p) => p.is_flash_deal));
         }
       } catch (err) {
-        // Fallback data is already loaded in state
+        console.warn('Failed to load products from cloud:', err);
       } finally {
         setLoading(false);
       }
@@ -166,31 +154,29 @@ export default function App() {
     setCart((prev) => prev.filter((item) => item.id !== productId));
   };
 
-  // Admin Product Actions
-  const handleAddProduct = (newProduct) => {
-    setProducts((prev) => {
-      const updated = [newProduct, ...prev];
-      try {
-        localStorage.setItem('piran_custom_products', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+  // Admin Product Actions with Cloud Sync
+  const handleAddProduct = async (newProduct) => {
+    setProducts((prev) => [newProduct, ...prev]);
     if (newProduct.is_flash_deal) {
       setDeals((prev) => [newProduct, ...prev]);
     }
     showToast(`"${newProduct.title_bn}" পণ্যটি স্টোরে যুক্ত হয়েছে!`);
+    try {
+      await addCustomProduct(newProduct);
+    } catch (e) {
+      console.error('Failed to sync new product to cloud:', e);
+    }
   };
 
-  const handleDeleteProduct = (productId) => {
-    setProducts((prev) => {
-      const updated = prev.filter((p) => p.id !== productId);
-      try {
-        localStorage.setItem('piran_custom_products', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+  const handleDeleteProduct = async (productId) => {
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
     setDeals((prev) => prev.filter((p) => p.id !== productId));
     showToast('পণ্যটি সফলভাবে মুছে ফেলা হয়েছে।');
+    try {
+      await deleteCustomProduct(productId);
+    } catch (e) {
+      console.error('Failed to delete product from cloud:', e);
+    }
   };
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);

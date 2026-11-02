@@ -129,28 +129,36 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Mobile Search Bar (Only visible on small phones) */}
-        <div className="mt-2.5 sm:hidden">
-          <div className="relative flex items-center">
+        {/* Mobile Search Bar (Sleek and easy to use on mobile phones) */}
+        <div className="mt-2 sm:hidden">
+          <div className="relative flex items-center bg-slate-100/90 rounded-xl border border-slate-200 focus-within:border-indigo-600 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-600/10 transition">
             <Search className="absolute left-3 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="পণ্য খুঁজুন..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-100 rounded-lg text-xs outline-hidden focus:bg-white focus:ring-2 focus:ring-indigo-500"
+              placeholder="পণ্য খুঁজুন (স্মার্ট ওয়াচ, পাঞ্জাবি, মধু...)"
+              className="w-full pl-9 pr-8 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-hidden bg-transparent"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 w-4 h-4 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-[10px] cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 3. Sub-Navbar for Quick Categories */}
-      <div className="hidden md:block border-t border-slate-100 bg-slate-50/60 text-xs text-slate-600">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <div className="flex items-center gap-6 py-2 overflow-x-auto">
+      {/* 3. Sub-Navbar for Quick Categories - Visible & Scrollable on ALL Devices */}
+      <div className="border-t border-slate-100 bg-slate-50/70 text-xs text-slate-600">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between">
+          <div className="flex items-center gap-4 sm:gap-6 py-2 overflow-x-auto scrollbar-none no-scrollbar shrink-0">
             <button
               onClick={() => onSelectCategory && onSelectCategory('all')}
-              className={`font-semibold transition cursor-pointer ${
+              className={`font-semibold transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'all' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -158,7 +166,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('gadgets')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'gadgets' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -166,7 +174,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('fashion')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'fashion' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -174,7 +182,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('home')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'home' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -182,7 +190,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('grocery')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'grocery' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -190,7 +198,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('computers')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'computers' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -198,7 +206,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('beauty')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'beauty' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -206,7 +214,7 @@ export default function Navbar({
             </button>
             <button
               onClick={() => onSelectCategory && onSelectCategory('fitness')}
-              className={`font-medium transition cursor-pointer ${
+              className={`font-medium transition cursor-pointer whitespace-nowrap ${
                 activeCategory === 'fitness' ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5' : 'hover:text-slate-900'
               }`}
             >
@@ -214,7 +222,7 @@ export default function Navbar({
             </button>
           </div>
 
-          <div className="py-2 text-[11px] font-semibold text-rose-600 flex items-center gap-1.5">
+          <div className="hidden sm:flex py-2 text-[11px] font-semibold text-rose-600 items-center gap-1.5 shrink-0 pl-2">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
             <span>ফ্ল্যাশ সেল চলছে!</span>
           </div>

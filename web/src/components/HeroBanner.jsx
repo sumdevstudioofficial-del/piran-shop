@@ -10,8 +10,6 @@ import {
   Truck, 
   ShieldCheck, 
   Clock, 
-  Plus, 
-  Check, 
   ShoppingBag,
   Star,
   Tag
@@ -98,10 +96,10 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
   const slide = slides[currentSlide];
 
   return (
-    <section className="pt-3 pb-2">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* 1. Smart Stories / Quick Highlights Row */}
-        <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto pb-3 mb-2 scrollbar-none no-scrollbar">
+    <section className="pt-2 sm:pt-3 pb-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4">
+        {/* 1. Smart Stories / Quick Highlights Row - 100% Mobile Optimized */}
+        <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto pb-2.5 mb-2.5 scrollbar-none no-scrollbar">
           {storyHighlights.map((item) => {
             const Icon = item.icon;
             return (
@@ -111,18 +109,18 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
                   if (item.id === 'flash') onExploreDeals();
                   else if (onSelectCategory) onSelectCategory(item.id);
                 }}
-                className="flex items-center gap-2 group shrink-0 cursor-pointer text-left"
+                className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2.5 group shrink-0 cursor-pointer text-center sm:text-left p-1 focus:outline-hidden"
               >
-                <div className={`w-10 h-10 rounded-full p-0.5 bg-gradient-to-tr ${item.color} group-hover:scale-105 transition-transform shadow-xs`}>
+                <div className={`w-12 h-12 sm:w-10 sm:h-10 rounded-full p-0.5 bg-gradient-to-tr ${item.color} group-hover:scale-105 transition-transform shadow-xs`}>
                   <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                    <Icon className="w-4 h-4 text-slate-800 group-hover:text-indigo-600 transition" />
+                    <Icon className="w-5 h-5 sm:w-4 sm:h-4 text-slate-800 group-hover:text-indigo-600 transition" />
                   </div>
                 </div>
-                <div className="hidden sm:block">
-                  <span className="block text-xs font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition">
+                <div>
+                  <span className="block text-[11px] sm:text-xs font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition whitespace-nowrap">
                     {item.label}
                   </span>
-                  <span className="block text-[10px] text-slate-400">এক্সপ্লোর</span>
+                  <span className="block text-[9px] sm:text-[10px] text-slate-400 font-medium">এক্সপ্লোর</span>
                 </div>
               </button>
             );
@@ -131,18 +129,18 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
 
         {/* 2. Main Smart Banner & Deal Widget Grid */}
         <div className="grid lg:grid-cols-12 gap-3 sm:gap-4">
-          {/* Main Dynamic Slider (8 cols) */}
+          {/* Main Dynamic Slider (8 cols on desktop, full width on mobile) */}
           <div
             onMouseEnter={() => setIsAutoPlay(false)}
             onMouseLeave={() => setIsAutoPlay(true)}
-            className={`lg:col-span-8 relative rounded-2xl bg-gradient-to-r ${slide.bgGradient} text-white overflow-hidden shadow-lg border border-slate-800 min-h-[300px] sm:min-h-[360px] flex flex-col justify-between p-6 sm:p-9 transition-all duration-700`}
+            className={`lg:col-span-8 relative rounded-2xl bg-gradient-to-r ${slide.bgGradient} text-white overflow-hidden shadow-lg border border-slate-800 min-h-[320px] sm:min-h-[360px] flex flex-col justify-between p-4 sm:p-8 transition-all duration-700`}
           >
             {/* Background glowing ambience */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
             {/* Top row with Tag and Slide Indicators */}
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-slate-200">
+            <div className="relative z-10 flex items-center justify-between mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] sm:text-[11px] font-semibold text-slate-200">
                 <Sparkles className="w-3 h-3 text-amber-400" />
                 {slide.tag}
               </span>
@@ -161,52 +159,54 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
               </div>
             </div>
 
-            {/* Main Center Content */}
-            <div className="relative z-10 grid sm:grid-cols-12 gap-4 items-center my-4">
-              <div className="sm:col-span-8 space-y-2.5">
-                <h2 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight sm:leading-tight">
+            {/* Main Center Content: Responsively displays Title, Details AND Product Image Card on Mobile */}
+            <div className="relative z-10 grid sm:grid-cols-12 gap-3 sm:gap-4 items-center my-auto py-2">
+              <div className="sm:col-span-7 space-y-2 sm:space-y-3">
+                <h2 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
                   {slide.title}
                 </h2>
                 <p className="text-slate-300 text-xs sm:text-sm line-clamp-2 leading-relaxed">
                   {slide.subtitle}
                 </p>
 
-                <div className="pt-2 flex items-center gap-3">
+                <div className="pt-1 flex flex-wrap items-center gap-2 sm:gap-3">
                   <button
                     onClick={() => {
                       if (onSelectCategory) onSelectCategory(slide.category);
                     }}
-                    className="px-5 py-2.5 bg-white text-slate-950 font-bold text-xs sm:text-sm rounded-xl hover:bg-slate-100 active:scale-95 transition flex items-center gap-2 cursor-pointer shadow-md"
+                    className="px-4 py-2 sm:px-5 sm:py-2.5 bg-white text-slate-950 font-bold text-xs sm:text-sm rounded-xl hover:bg-slate-100 active:scale-95 transition flex items-center gap-2 cursor-pointer shadow-md"
                   >
                     <span>{slide.cta}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
-                  <span className="px-3 py-2 rounded-xl bg-white/10 text-white text-xs font-semibold backdrop-blur-xs border border-white/15">
+                  <span className="px-2.5 py-1.5 rounded-xl bg-white/10 text-white text-[11px] sm:text-xs font-semibold backdrop-blur-xs border border-white/15">
                     {slide.badge}
                   </span>
                 </div>
               </div>
 
-              {/* Visual Highlight Card Floating inside Slide */}
-              <div className="sm:col-span-4 hidden sm:block">
-                <div className="relative rounded-xl overflow-hidden border border-white/20 bg-slate-900/60 backdrop-blur-md p-2.5 shadow-xl hover:scale-102 transition duration-300">
+              {/* Visual Highlight Card Floating inside Slide - FULLY VISIBLE ON MOBILE & DESKTOP */}
+              <div className="sm:col-span-5 block">
+                <div className="relative rounded-xl overflow-hidden border border-white/20 bg-slate-900/80 backdrop-blur-md p-2.5 shadow-xl hover:scale-102 transition duration-300 flex sm:flex-col items-center sm:items-stretch gap-3 sm:gap-0">
                   <img
                     src={slide.image}
                     alt={slide.title}
-                    className="w-full aspect-4/3 object-cover rounded-lg mb-2"
+                    className="w-20 h-20 sm:w-full sm:aspect-4/3 object-cover rounded-lg shrink-0 sm:mb-2 border border-white/10"
+                    loading="lazy"
                   />
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex-1 sm:flex sm:items-center sm:justify-between text-xs">
                     <div>
-                      <h4 className="font-bold text-white text-[11px] truncate">{slide.highlightProduct.name}</h4>
-                      <div className="flex items-baseline gap-1 mt-0.5">
-                        <span className="font-extrabold text-amber-400 text-xs">{slide.highlightProduct.price}</span>
+                      <h4 className="font-bold text-white text-xs sm:text-[11px] line-clamp-1">{slide.highlightProduct.name}</h4>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className="font-extrabold text-amber-400 text-xs sm:text-sm">{slide.highlightProduct.price}</span>
                         <span className="text-[10px] text-slate-400 line-through">{slide.highlightProduct.original}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-0.5 text-amber-400 text-[10px] font-bold">
+                    <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold mt-1 sm:mt-0">
                       <Star className="w-3 h-3 fill-amber-400" />
                       <span>{slide.highlightProduct.rating}</span>
+                      <span className="text-[9px] text-slate-300 font-normal sm:hidden">রেটিং</span>
                     </div>
                   </div>
                 </div>
@@ -214,8 +214,8 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
             </div>
 
             {/* Slider Navigation Chevrons */}
-            <div className="relative z-10 flex items-center justify-between pt-2">
-              <span className="text-[11px] text-slate-400">
+            <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 mt-1">
+              <span className="text-[11px] text-slate-400 font-medium">
                 {currentSlide + 1} / {slides.length} এক্সক্লুসিভ অফার
               </span>
 
@@ -269,7 +269,7 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
 
               <button
                 onClick={onExploreDeals}
-                className="w-full py-2 bg-white text-rose-600 hover:bg-rose-50 active:scale-98 text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                className="w-full py-2.5 bg-white text-rose-600 hover:bg-rose-50 active:scale-98 text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer mt-1"
               >
                 <span>অফারটি ক্লেইম করুন</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -277,7 +277,7 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
             </div>
 
             {/* 2. Quick Services & Vouchers Box */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs space-y-2.5">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-2">
               <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -305,21 +305,21 @@ export default function HeroBanner({ onExploreDeals, onSelectCategory }) {
 
         {/* 3. Subtle Trust Line Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-3">
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="text-xs font-medium text-slate-700">১০০% ভেরিফায়েড ব্র্যান্ড</span>
+            <span className="text-[11px] sm:text-xs font-medium text-slate-700 truncate">১০০% ভেরিফায়েড ব্র্যান্ড</span>
           </div>
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
             <Truck className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span className="text-xs font-medium text-slate-700">সারা দেশে দ্রুত ডেলিভারি</span>
+            <span className="text-[11px] sm:text-xs font-medium text-slate-700 truncate">সারা দেশে দ্রুত ডেলিভারি</span>
           </div>
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
             <Tag className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="text-xs font-medium text-slate-700">সেরা মূল্যের নিশ্চয়তা</span>
+            <span className="text-[11px] sm:text-xs font-medium text-slate-700 truncate">সেরা মূল্যের নিশ্চয়তা</span>
           </div>
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-white rounded-xl border border-slate-200/70 shadow-2xs">
             <Clock className="w-4 h-4 text-sky-600 shrink-0" />
-            <span className="text-xs font-medium text-slate-700">২৪/৭ অনলাইন সহায়তা</span>
+            <span className="text-[11px] sm:text-xs font-medium text-slate-700 truncate">২৪/৭ অনলাইন সহায়তা</span>
           </div>
         </div>
       </div>

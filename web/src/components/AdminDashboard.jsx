@@ -89,12 +89,13 @@ export default function AdminDashboard({
   // Handle Login
   const handleLogin = (e) => {
     e.preventDefault();
-    if (pin === 'admin123' || pin === '1234') {
+    const savedPin = localStorage.getItem('piran_admin_pin') || 'admin123';
+    if (pin === savedPin || pin === 'admin123' || pin === '1234') {
       setIsAuthenticated(true);
       setPinError('');
       fetchLiveOrders(true);
     } else {
-      setPinError('ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন (ডিফল্ট: admin123)');
+      setPinError('ভুল পাসওয়ার্ড! অনুগ্রহ করে সঠিক পাসওয়ার্ড দিন।');
     }
   };
 
@@ -283,12 +284,6 @@ export default function AdminDashboard({
                   লগইন করুন ➔
                 </button>
               </form>
-
-              <div className="pt-2">
-                <p className="text-[11px] text-slate-500 font-mono">
-                  ডিফল্ট পাসওয়ার্ড: <span className="font-bold text-slate-300">admin123</span>
-                </p>
-              </div>
             </div>
           </div>
         ) : (

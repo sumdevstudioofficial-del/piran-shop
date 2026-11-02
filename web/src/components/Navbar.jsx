@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Search, ShoppingCart, Truck, Phone, Heart, User, ChevronDown, Lock } from 'lucide-react';
+import { ShoppingBag, Search, ShoppingCart, Truck, Phone, Heart } from 'lucide-react';
 
 export default function Navbar({
   searchQuery,
@@ -9,8 +9,7 @@ export default function Navbar({
   setIsTrackingOpen,
   totalCartPrice,
   onSelectCategory,
-  activeCategory,
-  onOpenAdmin
+  activeCategory
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-xs">

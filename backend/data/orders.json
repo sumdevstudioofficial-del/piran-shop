@@ -1,0 +1,78 @@
+[
+  {
+    "order_id": "PIRAN-110621",
+    "customer": {
+      "name": "??? ??????? ?????",
+      "phone": "01712345678"
+    },
+    "items": [
+      {
+        "price": 3850,
+        "title": "Smart Watch Ultra 2",
+        "quantity": 1,
+        "id": "prod-1"
+      }
+    ],
+    "pricing": {
+      "subtotal": 3850,
+      "delivery_fee": 0,
+      "total": 3850
+    },
+    "payment": {
+      "method": "cod",
+      "status": "Cash on Delivery"
+    },
+    "shipping_address": "???? #?? (???? ???), ??? #??, ??????-?, ????: ??????, ????: ????, ?????: ????",
+    "address_details": {
+      "division": "????",
+      "district": "????",
+      "home_address": "???? #?? (???? ???), ??? #??, ??????-?",
+      "thana": "??????"
+    },
+    "status": "Processing",
+    "status_bn": "প্রক্রিয়াধীন রয়েছে",
+    "estimated_delivery": "২-৩ কার্যদিবসের মধ্যে",
+    "created_at": "2026-11-02T19:03:01.181Z"
+  },
+  {
+    "order_id": "PIRAN-780446",
+    "customer": {
+      "name": "ss",
+      "phone": "01948070094"
+    },
+    "items": [
+      {
+        "id": "prod-1",
+        "title": "Smart Watch Ultra 2 AMOLED Display with Bluetooth Calling",
+        "title_bn": "স্মার্ট ওয়াচ আল্ট্রা ২ অ্যামোলেড ডিসপ্লে (ব্লুটুথ কলিং সহ)",
+        "category": "gadgets",
+        "category_name": "গ্যাজেটস ও ইলেকট্রনিক্স",
+        "price": 3850,
+        "original_price": 5500,
+        "discount": "30%",
+        "rating": 4.8,
+        "reviews_count": 142,
+        "stock": 35,
+        "is_flash_deal": true,
+        "badge": "Flash Sale",
+        "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&auto=format&fit=crop&q=80",
+        "description": "প্রিমিয়াম টাইটানিয়াম ফিনিশ, ১.৯৬ ইঞ্চি আল্ট্রা-ব্রাইট অ্যামোলেড ডিসপ্লে, ব্লুটুথ এইচডি কলিং, হার্ট রেট ও স্লিপ ট্র্যাকার এবং IP68 ওয়াটারপ্রুফ রেটিং।",
+        "quantity": 1
+      }
+    ],
+    "pricing": {
+      "subtotal": 3850,
+      "delivery_fee": 0,
+      "total": 3850
+    },
+    "payment": {
+      "method": "cod",
+      "status": "Cash on Delivery"
+    },
+    "shipping_address": "sssssssssssssss, ঢাকা",
+    "status": "Processing",
+    "status_bn": "প্রক্রিয়াধীন রয়েছে",
+    "estimated_delivery": "২-৩ কার্যদিবসের মধ্যে",
+    "created_at": "2026-11-02T18:50:27.110Z"
+  }
+]

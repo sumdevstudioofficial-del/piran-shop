@@ -168,6 +168,7 @@ export default function App() {
             const el = document.getElementById('flash-deals');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
+          onSelectCategory={setActiveCategory}
         />
 
         {/* Category Pills Navigation */}

@@ -21,9 +21,14 @@ import {
   ChevronRight,
   RefreshCw,
   Database,
-  Wifi
+  Wifi,
+  Send,
+  Settings,
+  Key,
+  Check
 } from 'lucide-react';
 import { getOrders, updateOrderStatus, checkCloudHealth } from '../services/cloudDb';
+import { dispatchToCourier, getCourierSettings, saveCourierSettings } from '../services/courierService';
 
 export default function AdminDashboard({
   isStandalone = true,
@@ -57,6 +62,47 @@ export default function AdminDashboard({
   const [newDesc, setNewDesc] = useState('');
   const [isFlash, setIsFlash] = useState(false);
   const [productSuccessMsg, setProductSuccessMsg] = useState('');
+
+  // Courier Dispatch & Settings State
+  const [dispatchingOrder, setDispatchingOrder] = useState(null);
+  const [selectedCourier, setSelectedCourier] = useState('steadfast');
+  const [courierNote, setCourierNote] = useState('প্যাকেট অক্ষত অবস্থায় চেক করতে দিন');
+  const [isDispatching, setIsDispatching] = useState(false);
+  const [courierSettings, setCourierSettings] = useState(getCourierSettings());
+  const [courierSavedMsg, setCourierSavedMsg] = useState('');
+  const [courierActionMsg, setCourierActionMsg] = useState('');
+
+  // Handle Courier Dispatch Submit
+  const handleConfirmDispatch = async (e) => {
+    e.preventDefault();
+    if (!dispatchingOrder) return;
+
+    setIsDispatching(true);
+    try {
+      const result = await dispatchToCourier(dispatchingOrder, {
+        courier: selectedCourier,
+        note: courierNote
+      });
+
+      setCourierActionMsg(`🎉 অর্ডারটি সফলভাবে ${result.provider}-এ বুকিং হয়েছে! ট্র্যাকিং কোড: ${result.tracking_code}`);
+      setTimeout(() => setCourierActionMsg(''), 6000);
+      setDispatchingOrder(null);
+      await fetchLiveOrders(true);
+    } catch (err) {
+      console.error('Dispatch error:', err);
+      alert('কুরিয়ার বুকিং করতে সমস্যা হয়েছে।');
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+
+  // Handle Save Courier Settings
+  const handleSaveSettings = (e) => {
+    e.preventDefault();
+    saveCourierSettings(courierSettings);
+    setCourierSavedMsg('✅ কুরিয়ার API সেটিংস সফলভাবে সংরক্ষিত হয়েছে!');
+    setTimeout(() => setCourierSavedMsg(''), 3500);
+  };
 
   // Fetch live orders from Cloud Database
   const fetchLiveOrders = useCallback(async (showIndicator = false) => {
@@ -355,9 +401,32 @@ export default function AdminDashboard({
                 }`}
               >
                 <Plus className="w-4 h-4" />
-                <span>+ নতুন পণ্য যোগ করুন</span>
+                <span>+ নতুন পণ্য</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('courier')}
+                className={`flex-1 py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 ${
+                  activeTab === 'courier'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Truck className="w-4 h-4 text-emerald-400" />
+                <span>কুরিয়ার অটোমেশন (Steadfast)</span>
               </button>
             </div>
+
+            {/* Courier Dispatch Alert Message */}
+            {courierActionMsg && (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{courierActionMsg}</span>
+                </div>
+                <button onClick={() => setCourierActionMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
+              </div>
+            )}
 
             {/* Tab 1: Orders */}
             {activeTab === 'orders' && (
@@ -418,7 +487,40 @@ export default function AdminDashboard({
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Courier Dispatch / Tracking Badge */}
+                            {order.courier_info ? (
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold">
+                                <Truck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>{order.courier_info.provider}: <strong className="font-mono">{order.courier_info.tracking_code}</strong></span>
+                                {order.courier_info.tracking_url && (
+                                  <a
+                                    href={order.courier_info.tracking_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1 hover:bg-slate-800 rounded text-slate-300 ml-0.5 transition cursor-pointer"
+                                    title="কুরিয়ার লাইভ ট্র্যাকিং খুলুন"
+                                  >
+                                    <ExternalLink className="w-3 h-3 text-indigo-400" />
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setDispatchingOrder(order);
+                                  setSelectedCourier(courierSettings.default_provider || 'steadfast');
+                                  setCourierNote('প্যাকেট অক্ষত অবস্থায় চেক করতে দিন');
+                                }}
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                                title="Steadfast বা Pathao কুরিয়ারে এক ক্লিকে বুকিং দিন"
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>কুরিয়ারে পাঠান</span>
+                              </button>
+                            )}
+
+                            {/* Status Selector */}
                             <select
                               value={order.status}
                               onChange={(e) => {
@@ -675,6 +777,245 @@ export default function AdminDashboard({
                 </form>
               </div>
             )}
+
+            {/* Tab 4: Courier Automation & Settings */}
+            {activeTab === 'courier' && (
+              <div className="space-y-6">
+                {/* Settings Form */}
+                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-black text-white">কুরিয়ার অটোমেশন ও API সেটিংস</h3>
+                        <p className="text-xs text-slate-400">Steadfast ও Pathao কুরিয়ার API কনফিগারেশন</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        ● অটোমেটিক বুকিং সক্রিয়
+                      </span>
+                    </div>
+                  </div>
+
+                  {courierSavedMsg && (
+                    <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>{courierSavedMsg}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveSettings} className="space-y-4 max-w-2xl text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1.5">ডিফল্ট কুরিয়ার সার্ভিস</label>
+                      <select
+                        value={courierSettings.default_provider}
+                        onChange={(e) => setCourierSettings({ ...courierSettings, default_provider: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white focus:border-indigo-500 outline-hidden font-semibold cursor-pointer"
+                      >
+                        <option value="steadfast">Steadfast Courier (স্টেডফাস্ট - রিকমেন্ডেড)</option>
+                        <option value="pathao">Pathao Courier (পাঠাও কুরিয়ার)</option>
+                      </select>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800/80 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-indigo-400 text-sm flex items-center gap-1.5">
+                          <Key className="w-4 h-4" /> Steadfast Courier API
+                        </span>
+                        <a
+                          href="https://portal.steadfast.com.bd"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-slate-400 hover:text-indigo-400 flex items-center gap-1"
+                        >
+                          <span>স্টেডফাস্ট পোর্টাল</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Steadfast Api-Key</label>
+                        <input
+                          type="text"
+                          placeholder="আপনার স্টেডফাস্ট API Key দিন..."
+                          value={courierSettings.steadfast_api_key || ''}
+                          onChange={(e) => setCourierSettings({ ...courierSettings, steadfast_api_key: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:border-indigo-500 outline-hidden"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Steadfast Secret-Key</label>
+                        <input
+                          type="password"
+                          placeholder="আপনার স্টেডফাস্ট Secret Key দিন..."
+                          value={courierSettings.steadfast_secret_key || ''}
+                          onChange={(e) => setCourierSettings({ ...courierSettings, steadfast_secret_key: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:border-indigo-500 outline-hidden"
+                        />
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        💡 <strong>কীভাবে পাবেন:</strong> Steadfast মার্চেন্ট পোর্টালে লগইন করে Settings ➔ API Setting মেন্যু থেকে Api-Key এবং Secret-Key কপি করে এখানে পেস্ট করুন। কি না দেওয়া পর্যন্ত সিস্টেম স্বয়ংক্রিয়ভাবে টেস্ট মোডে ট্র্যাকিং কোড জেনারেট করবে।
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-bold text-xs rounded-xl transition cursor-pointer shadow-md shadow-emerald-600/20 flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>সেটিংস সেভ করুন</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Dispatched Parcels Overview */}
+                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 sm:p-6">
+                  <h4 className="text-sm font-bold text-white mb-3">📦 কুরিয়ারে বুকিংকৃত পার্সেলসমূহ</h4>
+                  <div className="overflow-x-auto">
+                    {orders.filter(o => o.courier_info).length === 0 ? (
+                      <p className="text-xs text-slate-500 py-6 text-center">এখনও কোনো অর্ডার কুরিয়ারে পাঠানো হয়নি। "গ্রাহকের অর্ডারসমূহ" থেকে "কুরিয়ারে পাঠান" চাপুন।</p>
+                    ) : (
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400">
+                            <th className="pb-2 font-semibold">অর্ডার আইডি</th>
+                            <th className="pb-2 font-semibold">কুরিয়ার</th>
+                            <th className="pb-2 font-semibold">ট্র্যাকিং কোড</th>
+                            <th className="pb-2 font-semibold">গ্রাহকের নাম ও ফোন</th>
+                            <th className="pb-2 font-semibold">ক্যাশ টু কালেক্ট</th>
+                            <th className="pb-2 font-semibold text-right">ট্র্যাকিং লিংক</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {orders.filter(o => o.courier_info).map((o) => (
+                            <tr key={o.order_id} className="text-slate-300">
+                              <td className="py-2.5 font-mono font-bold text-indigo-400">{o.order_id}</td>
+                              <td className="py-2.5 font-medium">{o.courier_info.provider}</td>
+                              <td className="py-2.5 font-mono font-bold text-emerald-400">{o.courier_info.tracking_code}</td>
+                              <td className="py-2.5">{o.customer?.name} ({o.customer?.phone})</td>
+                              <td className="py-2.5 font-bold text-white">৳{o.pricing?.total?.toLocaleString()}</td>
+                              <td className="py-2.5 text-right">
+                                {o.courier_info.tracking_url && (
+                                  <a
+                                    href={o.courier_info.tracking_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-indigo-400 font-semibold inline-flex items-center gap-1"
+                                  >
+                                    <span>ট্র্যাক</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Dispatch to Courier Modal */}
+        {dispatchingOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl text-white space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white">কুরিয়ারে পার্সেল বুকিং</h3>
+                    <p className="text-xs text-slate-400">অর্ডার: <span className="font-mono text-indigo-400">{dispatchingOrder.order_id}</span></p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDispatchingOrder(null)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Order Quick Summary */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">গ্রাহকের নাম:</span>
+                  <span className="font-bold text-white">{dispatchingOrder.customer?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">মোবাইল নম্বর:</span>
+                  <span className="font-mono font-bold text-emerald-400">{dispatchingOrder.customer?.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">ডেলিভারি ঠিকানা:</span>
+                  <span className="font-medium text-slate-300 text-right max-w-xs">{dispatchingOrder.shipping_address}</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-slate-800/80 font-bold">
+                  <span className="text-slate-400">ক্যাশ অন ডেলিভারি (COD):</span>
+                  <span className="text-indigo-400 text-sm">৳{dispatchingOrder.pricing?.total?.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleConfirmDispatch} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1">কুরিয়ার সার্ভিস নির্বাচন করুন</label>
+                  <select
+                    value={selectedCourier}
+                    onChange={(e) => setSelectedCourier(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:border-indigo-500 outline-hidden font-semibold cursor-pointer"
+                  >
+                    <option value="steadfast">Steadfast Courier (স্টেডফাস্ট কুরিয়ার - রিকমেন্ডেড)</option>
+                    <option value="pathao">Pathao Courier (পাঠাও কুরিয়ার)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1">ডেলিভারি স্পেশাল নোট (Instructions)</label>
+                  <input
+                    type="text"
+                    value={courierNote}
+                    onChange={(e) => setCourierNote(e.target.value)}
+                    placeholder="যেমন: প্যাকেট অক্ষত অবস্থায় চেক করতে দিন..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:border-indigo-500 outline-hidden"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDispatchingOrder(null)}
+                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition cursor-pointer"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isDispatching}
+                    className="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition cursor-pointer shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                  >
+                    {isDispatching ? (
+                      <span>বুকিং হচ্ছে...</span>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>কনসাইনমেন্ট নিশ্চিত করুন 🚀</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </main>

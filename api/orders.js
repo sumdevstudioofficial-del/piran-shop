@@ -86,10 +86,10 @@ module.exports = async (req, res) => {
     }
   }
 
-  // PATCH: Update order status
+  // PATCH: Update order status & courier dispatch info
   if (req.method === 'PATCH' || req.method === 'PUT') {
     try {
-      const { order_id, status, status_bn } = req.body;
+      const { order_id, status, status_bn, courier_info } = req.body;
       if (!order_id) {
         return res.status(400).json({ success: false, message: 'Order ID is required' });
       }
@@ -99,9 +99,20 @@ module.exports = async (req, res) => {
 
       const data = await response.json();
       const orders = data.orders || [];
-      const updated = orders.map((o) =>
-        o.order_id === order_id ? { ...o, status, status_bn } : o
-      );
+      const updated = orders.map((o) => {
+        if (o.order_id === order_id) {
+          const mod = { ...o };
+          if (status) {
+            mod.status = status;
+            mod.status_bn = status_bn || status;
+          }
+          if (courier_info) {
+            mod.courier_info = courier_info;
+          }
+          return mod;
+        }
+        return o;
+      });
 
       await fetch(ORDERS_BIN_URL, {
         method: 'PUT',
@@ -111,7 +122,7 @@ module.exports = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: 'অর্ডার স্ট্যাটাস সফলভাবে আপডেট হয়েছে!'
+        message: 'অর্ডার এবং কুরিয়ার তথ্য সফলভাবে আপডেট হয়েছে!'
       });
     } catch (error) {
       console.error('[API /orders PATCH error]:', error);

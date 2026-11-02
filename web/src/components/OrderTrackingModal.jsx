@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Search, CheckCircle, Package, Truck, Home, Loader2, AlertCircle } from 'lucide-react';
+import { X, Search, CheckCircle, Package, Truck, Home, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
 import { trackOrder } from '../services/cloudDb';
 
 export default function OrderTrackingModal({ isOpen, onClose }) {
@@ -104,11 +104,46 @@ export default function OrderTrackingModal({ isOpen, onClose }) {
               </div>
             </div>
 
+            {/* Courier Dispatch Card */}
+            {orderData.courier_info && (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50 to-emerald-50 border border-indigo-200/80 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-slate-900">{orderData.courier_info.provider}</span>
+                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                        পার্সেল বুকড
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-mono mt-0.5">
+                      ট্র্যাকিং কোড: <span className="font-bold text-slate-900">{orderData.courier_info.tracking_code}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {orderData.courier_info.tracking_url && (
+                  <a
+                    href={orderData.courier_info.tracking_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-xl transition flex items-center gap-1 shadow-xs cursor-pointer shrink-0"
+                  >
+                    <span>কুরিয়ার ট্র্যাক</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
+
             {/* Visual Timeline */}
             <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-200">
               {steps.map((step, idx) => {
                 const Icon = step.icon;
-                const isCurrent = idx <= 1; // simulation of processing step
+                const stepLevel = orderData.status === 'Delivered' ? 3 : orderData.status === 'Shipped' ? 2 : 1;
+                const isCurrent = idx <= stepLevel;
 
                 return (
                   <div key={idx} className="relative flex items-start gap-3">
